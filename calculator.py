@@ -1,18 +1,46 @@
-def get_number(prompt):
-    """Prompt user for a number and validate input."""
-    while True:
+def get_number(prompt, min_value=None, max_value=None, max_retries=3):
+    """Prompt user for a valid number with optional range validation."""
+    retries = 0
+    while retries < max_retries:
         try:
-            return float(input(prompt))
+            value = float(input(prompt))
+
+            # Check for invalid float values
+            if value != value:  # NaN check
+                print("Error: Please enter a valid number (not NaN).")
+                retries += 1
+                continue
+            if value == float('inf') or value == float('-inf'):
+                print("Error: Please enter a finite number.")
+                retries += 1
+                continue
+
+            # Range validation
+            if min_value is not None and value < min_value:
+                print(f"Error: Number must be >= {min_value}.")
+                retries += 1
+                continue
+            if max_value is not None and value > max_value:
+                print(f"Error: Number must be <= {max_value}.")
+                retries += 1
+                continue
+
+            return value
         except ValueError:
             print("Error: Please enter a valid number.")
+            retries += 1
+
+    raise ValueError(f"Failed to get valid input after {max_retries} attempts.")
 
 
 def validate_operation(operation):
-    """Validate that the operation is supported."""
+    """Validate and normalize the operation."""
     valid_operations = {'+', '-', '*', '/'}
+    operation = operation.strip()  # Sanitize input
+
     if operation not in valid_operations:
-        return False
-    return True
+        return False, None
+    return True, operation
 
 
 def add(a, b):
@@ -30,9 +58,9 @@ def multiply(a, b):
     return a * b
 
 
-def divide(a, b):
-    """Divide two numbers with zero division check."""
-    if b == 0:
+def divide(a, b, epsilon=1e-10):
+    """Divide two numbers with zero division check using epsilon comparison."""
+    if abs(b) < epsilon:  # Better floating-point comparison
         raise ValueError("Error: Cannot divide by zero.")
     return a / b
 
@@ -77,8 +105,9 @@ def main():
 
         # Get operation
         while True:
-            operation = input("Enter an operation (+, -, *, /): ").strip()
-            if validate_operation(operation):
+            operation_input = input("Enter an operation (+, -, *, /): ")
+            is_valid, operation = validate_operation(operation_input)
+            if is_valid:
                 break
             print("Error: Please enter a valid operation (+, -, *, /).")
 
