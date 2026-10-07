@@ -15,6 +15,7 @@ and invalid inputs. All tests are isolated using mocks and parametrization for e
 
 import pytest
 from unittest.mock import patch
+import math
 
 from calculator import (
     get_number,
@@ -23,6 +24,7 @@ from calculator import (
     subtract,
     multiply,
     divide,
+    cosine,
     perform_calculation,
     display_menu,
     main,
@@ -111,6 +113,228 @@ class TestArithmeticOperations:
         """Test that division by negative very small numbers (< epsilon) raises ValueError."""
         with pytest.raises(ValueError, match="Cannot divide by zero"):
             divide(10, -1e-11)
+
+
+# ============================================================================
+# Test Class for cosine() Function
+# ============================================================================
+
+class TestCosine:
+    """Tests for cosine() trigonometric function with degree-to-radian conversion."""
+
+    # -------- Basic Functionality: Common Angles --------
+    @pytest.mark.parametrize("angle_degrees,expected", [
+        (0, 1.0),           # cos(0°) = 1
+        (90, pytest.approx(0.0, abs=1e-9)),   # cos(90°) = 0
+        (180, -1.0),        # cos(180°) = -1
+        (270, pytest.approx(0.0, abs=1e-9)),  # cos(270°) = 0
+        (360, 1.0),         # cos(360°) = 1 (full rotation)
+    ])
+    def test_cosine_standard_angles(self, angle_degrees, expected):
+        """Test cosine with standard angles (0°, 90°, 180°, 270°, 360°)."""
+        result = cosine(angle_degrees)
+        assert result == expected
+
+    # -------- Known Exact Values --------
+    @pytest.mark.parametrize("angle_degrees,expected", [
+        (30, pytest.approx(math.sqrt(3) / 2)),  # cos(30°) = √3/2 ≈ 0.866
+        (45, pytest.approx(math.sqrt(2) / 2)),  # cos(45°) = √2/2 ≈ 0.707
+        (60, pytest.approx(0.5)),                # cos(60°) = 0.5
+        (120, pytest.approx(-0.5)),              # cos(120°) = -0.5
+        (135, pytest.approx(-math.sqrt(2) / 2)), # cos(135°) = -√2/2
+        (150, pytest.approx(-math.sqrt(3) / 2)), # cos(150°) = -√3/2
+    ])
+    def test_cosine_exact_mathematical_values(self, angle_degrees, expected):
+        """Test cosine with angles that have known exact mathematical values."""
+        result = cosine(angle_degrees)
+        assert result == expected
+
+    # -------- Negative Angles --------
+    @pytest.mark.parametrize("angle_degrees,expected", [
+        (-0, 1.0),                            # cos(-0°) = 1
+        (-45, pytest.approx(math.sqrt(2) / 2)),  # cos(-45°) = cos(45°) (even function)
+        (-90, pytest.approx(0.0, abs=1e-9)),     # cos(-90°) = 0
+        (-180, -1.0),                        # cos(-180°) = -1
+        (-270, pytest.approx(0.0, abs=1e-9)),    # cos(-270°) = 0
+        (-360, 1.0),                         # cos(-360°) = 1
+    ])
+    def test_cosine_negative_angles(self, angle_degrees, expected):
+        """Test cosine with negative angles. Cosine is an even function: cos(-x) = cos(x)."""
+        result = cosine(angle_degrees)
+        assert result == expected
+
+    # -------- Large Angles (Multiple Rotations) --------
+    @pytest.mark.parametrize("angle_degrees,expected_basis", [
+        (720, 1.0),         # 720° = 2 full rotations = 0° basis
+        (450, pytest.approx(0.0, abs=1e-9)),  # 450° = 90° basis (360° + 90°)
+        (540, -1.0),        # 540° = 180° basis (360° + 180°)
+        (810, pytest.approx(0.0, abs=1e-9)),  # 810° = 90° basis (720° + 90°)
+        (1080, 1.0),        # 1080° = 3 full rotations = 0° basis
+    ])
+    def test_cosine_large_angles(self, angle_degrees, expected_basis):
+        """Test cosine with angles > 360° (multiple full rotations)."""
+        result = cosine(angle_degrees)
+        assert result == expected_basis
+
+    # -------- Small/Fractional Angles --------
+    @pytest.mark.parametrize("angle_degrees", [0.1, 0.01, 1, 5, 10, 15, 20])
+    def test_cosine_small_angles(self, angle_degrees):
+        """Test cosine with small positive angles."""
+        result = cosine(angle_degrees)
+        # All small positive angles should have cosine close to 1 (approaching cos(0°) = 1)
+        assert 0 < result <= 1.0
+
+    @pytest.mark.parametrize("angle_degrees", [-0.1, -0.01, -1, -5, -10, -15, -20])
+    def test_cosine_small_negative_angles(self, angle_degrees):
+        """Test cosine with small negative angles."""
+        result = cosine(angle_degrees)
+        # By even function property: cos(-x) = cos(x), same as small positive
+        assert 0 < result <= 1.0
+
+    # -------- Very Small Angles (Near Zero) --------
+    def test_cosine_near_zero_positive(self):
+        """Test cosine with angle very close to 0° from positive side."""
+        result = cosine(1e-6)
+        # cos(0) = 1, so cos(very small) should be very close to 1
+        assert result == pytest.approx(1.0, abs=1e-10)
+
+    def test_cosine_near_zero_negative(self):
+        """Test cosine with angle very close to 0° from negative side."""
+        result = cosine(-1e-6)
+        # By even function: cos(-x) = cos(x), so still close to 1
+        assert result == pytest.approx(1.0, abs=1e-10)
+
+    # -------- Floating-Point Input --------
+    @pytest.mark.parametrize("angle_degrees", [30.5, 45.25, 89.99, 180.1, 270.75])
+    def test_cosine_decimal_angle_inputs(self, angle_degrees):
+        """Test cosine with decimal/fractional degree inputs."""
+        result = cosine(angle_degrees)
+        # Just verify result is in valid range for cosine
+        assert -1.0 <= result <= 1.0
+
+    # -------- Even Function Property: cos(-x) = cos(x) --------
+    @pytest.mark.parametrize("angle_degrees", [15, 30, 45, 60, 75, 120, 200, 315])
+    def test_cosine_even_function_property(self, angle_degrees):
+        """Test the mathematical property that cosine is an even function: cos(-x) = cos(x)."""
+        positive_result = cosine(angle_degrees)
+        negative_result = cosine(-angle_degrees)
+        assert positive_result == pytest.approx(negative_result, abs=1e-10)
+
+    # -------- Periodicity: cos(x + 360) = cos(x) --------
+    @pytest.mark.parametrize("angle_degrees", [0, 45, 90, 135, 180, 225, 270, 315])
+    def test_cosine_periodicity_360(self, angle_degrees):
+        """Test periodicity: cos(x) = cos(x + 360°)."""
+        result_base = cosine(angle_degrees)
+        result_plus_360 = cosine(angle_degrees + 360)
+        result_plus_720 = cosine(angle_degrees + 720)
+        assert result_base == pytest.approx(result_plus_360, abs=1e-10)
+        assert result_base == pytest.approx(result_plus_720, abs=1e-10)
+
+    # -------- Supplementary Angle Relationship: cos(180 - x) = -cos(x) --------
+    @pytest.mark.parametrize("angle_degrees", [30, 45, 60, 75])
+    def test_cosine_supplementary_angle_relationship(self, angle_degrees):
+        """Test supplementary angle relationship: cos(180° - x) = -cos(x)."""
+        result_original = cosine(angle_degrees)
+        result_supplementary = cosine(180 - angle_degrees)
+        assert result_supplementary == pytest.approx(-result_original, abs=1e-10)
+
+    # -------- Range Validation: Result Always in [-1, 1] --------
+    @pytest.mark.parametrize("angle_degrees", [0, 45, 90, 135, 180, 225, 270, 315, 360, 720, -45, -180, 1e6, -1e6])
+    def test_cosine_range_always_valid(self, angle_degrees):
+        """Test that cosine always returns value in [-1, 1] regardless of input."""
+        result = cosine(angle_degrees)
+        assert -1.0 <= result <= 1.0
+
+    # -------- Monotonicity in Standard Quadrants --------
+    def test_cosine_decreasing_first_quadrant(self):
+        """Test that cosine decreases from 1 to 0 in first quadrant (0° to 90°)."""
+        cos_0 = cosine(0)
+        cos_45 = cosine(45)
+        cos_90 = cosine(90)
+        assert cos_0 > cos_45 > cos_90
+
+    def test_cosine_decreasing_second_quadrant(self):
+        """Test that cosine continues decreasing from 0 to -1 in second quadrant (90° to 180°)."""
+        cos_90 = cosine(90)
+        cos_135 = cosine(135)
+        cos_180 = cosine(180)
+        assert cos_90 > cos_135 > cos_180
+
+    def test_cosine_increasing_third_quadrant(self):
+        """Test that cosine increases from -1 to 0 in third quadrant (180° to 270°)."""
+        cos_180 = cosine(180)
+        cos_225 = cosine(225)
+        cos_270 = cosine(270)
+        assert cos_180 < cos_225 < cos_270
+
+    def test_cosine_increasing_fourth_quadrant(self):
+        """Test that cosine increases from 0 to 1 in fourth quadrant (270° to 360°)."""
+        cos_270 = cosine(270)
+        cos_315 = cosine(315)
+        cos_360 = cosine(360)
+        assert cos_270 < cos_315 < cos_360
+
+    # -------- Special Angle Sequences --------
+    @pytest.mark.parametrize("angle_degrees,expected", [
+        (0, 1.0),
+        (30, pytest.approx(math.sqrt(3) / 2)),
+        (60, pytest.approx(0.5)),
+        (90, pytest.approx(0.0, abs=1e-9)),
+    ])
+    def test_cosine_complementary_angles_decreasing(self, angle_degrees, expected):
+        """Test sequence of complementary angles (0°, 30°, 60°, 90°)."""
+        result = cosine(angle_degrees)
+        assert result == expected
+
+    # -------- Edge Case: Very Large Angle Values --------
+    def test_cosine_very_large_positive_angle(self):
+        """Test cosine with very large positive angle."""
+        result = cosine(1e6)
+        assert -1.0 <= result <= 1.0
+
+    def test_cosine_very_large_negative_angle(self):
+        """Test cosine with very large negative angle."""
+        result = cosine(-1e6)
+        assert -1.0 <= result <= 1.0
+
+    # -------- Error Handling: Invalid Input Types (if applicable) --------
+    def test_cosine_with_float_input(self):
+        """Test cosine handles float input correctly."""
+        result = cosine(45.5)
+        assert isinstance(result, float)
+        assert -1.0 <= result <= 1.0
+
+    def test_cosine_with_integer_input(self):
+        """Test cosine handles integer input correctly."""
+        result = cosine(45)
+        assert isinstance(result, float)
+        assert -1.0 <= result <= 1.0
+
+    def test_cosine_with_zero_float(self):
+        """Test cosine with floating-point zero."""
+        result = cosine(0.0)
+        assert result == pytest.approx(1.0)
+
+    # -------- Numerical Stability --------
+    def test_cosine_numerical_stability_near_extrema(self):
+        """Test numerical stability near extrema (90° and 270°)."""
+        # Test values slightly less and more than 90°
+        cos_89_9 = cosine(89.9)
+        cos_90_0 = cosine(90.0)
+        cos_90_1 = cosine(90.1)
+
+        # Results should be smooth and close to zero
+        assert abs(cos_89_9) < 0.02
+        assert abs(cos_90_0) < 1e-8
+        assert abs(cos_90_1) < 0.02
+
+    def test_cosine_consistency_with_math_module(self):
+        """Test that cosine() output matches math.cos(math.radians(angle))."""
+        angles = [0, 30, 45, 60, 90, 120, 180, 270, 360, -45, -90, 405]
+        for angle in angles:
+            result_custom = cosine(angle)
+            result_math = math.cos(math.radians(angle))
+            assert result_custom == pytest.approx(result_math, abs=1e-10)
 
 
 # ============================================================================

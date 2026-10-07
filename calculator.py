@@ -65,6 +65,13 @@ def divide(a, b, epsilon=1e-10):
     return a / b
 
 
+def cosine(angle_degrees):
+    """Calculate the cosine of an angle in degrees."""
+    import math
+    angle_radians = math.radians(angle_degrees)
+    return math.cos(angle_radians)
+
+
 def perform_calculation(num1, num2, operation):
     """Perform the selected operation."""
     operations = {
