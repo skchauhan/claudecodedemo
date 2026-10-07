@@ -14,9 +14,7 @@ and invalid inputs. All tests are isolated using mocks and parametrization for e
 """
 
 import pytest
-from unittest.mock import patch, MagicMock, call
-from io import StringIO
-import sys
+from unittest.mock import patch
 
 from calculator import (
     get_number,
@@ -411,14 +409,12 @@ class TestMain:
         assert 'Cannot divide by zero' in calls_str
 
     @patch('calculator.display_menu')
-    @patch('builtins.input', side_effect=['5', '+', '3', 'y'])
+    @patch('builtins.input', side_effect=['5', '+', '3', 'y', '2', '-', '1', 'no'])
     @patch('builtins.print')
     def test_main_continue_with_y(self, mock_print, mock_input, mock_display):
         """Test that 'y' continues the loop."""
-        # Mock the second iteration to exit
-        inputs = ['5', '+', '3', 'y', '2', '-', '1', 'no']
-        with patch('builtins.input', side_effect=inputs):
-            main()
+        main()
+        assert mock_input.call_count == 8
 
     @patch('calculator.display_menu')
     @patch('builtins.input', side_effect=['5', '+', '3', 'yes', '2', '-', '1', 'no'])
